@@ -10,28 +10,49 @@ int main(){
     int fd;
     mkfifo("recebe_clientes", 0666);
     fd = open("recebe_clientes", O_RDONLY);
-    char Ncliente[50];
-    int bytes = read(fd,Ncliente, sizeof(Ncliente)); 
-    pid_t pid = fork();
 
-    if(pid == 0){
+    if(fork() == 0){
+        char clienteAux[7];
+        read(fd,clienteAux, sizeof(clienteAux));
+
+        int aux = atoi(clienteAux);
+        char Ncliente[7];
+        sprintf(Ncliente,"%d", aux);
+
         int fdFilho;
-        char buffer[1024];
         char ** args = NULL;
         int arg_count = 0;
-        mkfifo(Ncliente, 0666);
-        fdFilho = open(Ncliente, O_RDONLY);
-        int bytes1 = read(fdFilho,buffer, sizeof(buffer));
 
-        args = (char**) malloc(sizeof(char*));
-        args[arg_count++] = strtok(buffer, " ");
+        fdFilho = open(Ncliente, O_RDONLY);
+        if(fdFilho<0){puts("erro");}
+
+        char tamanho[3];
+        read(fdFilho,tamanho, 3);
+
+        char buffer[200];
+        read(fdFilho,buffer,atoi(tamanho));
+
+            args = (char**) malloc(sizeof(char*));
+
+            args[arg_count++] = strtok(buffer, " ");
+
         while(args[arg_count-1]!=NULL){
             args = (char**) realloc(args, (arg_count + 1) * sizeof(char*));
-            args[arg_count++] = strtok(NULL, " "); 
+            args[arg_count++] = strtok(NULL, " ");
+        } 
+
+
+        close(fdFilho);
+        int resposta = open(Ncliente, O_WRONLY);
+
+        dup2(resposta,STDOUT_FILENO);
+        if (fork()==0){
+            execvp(args[0], args);
+            free(args);
         }
-        execvp(args[0], args);
-        free(args);
+        close(resposta);
         exit(0);
     }
+    close(fd);
      return 0;
 }
