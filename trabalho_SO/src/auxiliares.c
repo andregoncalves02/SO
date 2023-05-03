@@ -6,6 +6,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <sys/time.h>
+#include <sys/wait.h>
 #include "auxiliares.h"
 
 Proc* inicializar_lista() {
@@ -82,3 +83,69 @@ void remove_finished_procs(Proc **head) {
     }
   }
 }
+
+
+void imprimir_lista(Proc *head, int descritor) {
+    unsigned long long now = calcula_timestamp();
+    Proc *atual = head;
+    char buffer[400];
+    while (atual != NULL) {
+        if(atual->finished==0){
+        unsigned long long tempo_exec = now - atual->timestamp;
+        char prog[200];
+        strcpy(prog,atual->prog);
+        sprintf(buffer, "%d;%s;%llu\n", atual->pid,prog, tempo_exec);
+        write(descritor, buffer, strlen(buffer));
+        atual = atual->next;
+        }
+        else{
+        atual = atual->next;
+        }
+    }
+}
+
+void free_lista(Proc *head) {
+    Proc *atual = head;
+    while (atual != NULL) {
+        Proc *temp = atual;
+        atual = atual->next;
+        free(temp);
+    }
+}
+
+void execute_u(char* fifo , char** args){
+    int resposta = open(fifo, O_WRONLY);                                
+    if (resposta < 0) {
+        perror("Erro ao abrir o arquivo do cliente");
+        exit(1);
+    }
+
+    pid_t pid = fork();
+    if (pid < 0) {
+        perror("Erro ao criar processo filho");
+        exit(1);
+    } else if (pid == 0) {
+        // Processo filho
+        dup2(resposta, STDOUT_FILENO);
+        execvp(args[0], args);
+        perror("Erro ao executar o programa");
+        exit(1);
+    }
+
+    // Processo pai
+    int status;
+    if (waitpid(pid, &status, 0) < 0) {
+        perror("Erro ao esperar pelo processo filho");
+        exit(1);
+    }
+
+    if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
+        printf("Erro ao executar o programa\n");
+        exit(1);
+    }
+
+    free(args);
+    close(resposta);
+}
+
+
