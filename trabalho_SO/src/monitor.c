@@ -22,7 +22,7 @@ int main(){
         read(fd,clienteAux, sizeof(clienteAux));
         int pidInt = atoi(clienteAux);
 
-        adicionar_processo(&inicio,pidInt,"",0);
+        adiciona_processo(&inicio,pidInt);
 
         if(fork() == 0){
             int meuPid = pidInt;
@@ -44,32 +44,18 @@ int main(){
                 char buffer[200];
                 read(fdFilho,buffer,atoi(tamanho));
 
+                char bufferAux[strlen(buffer)+1];
+                strcpy(bufferAux,buffer);
+
                 unsigned long long timestamp;
                 read(fdFilho,&timestamp,sizeof(unsigned long long));
 
-                Proc* current = NULL;
+                alterar_nodo(&inicio, meuPid, bufferAux,timestamp);
+                                                    
 
-                if (fork()==0){
-                    current = inicio;
+                args = (char**) malloc(sizeof(char*));
 
-                    while (current != NULL && current->pid!= meuPid) {
-                        current = current->next;
-                    }
-
-                    if (current != NULL)
-                    {
-                        strcpy(current->prog,buffer);
-                        current->timestamp = timestamp;
-                    }
-                    else {printf("Pid inexistente: %d", meuPid);
-                        }
-                    exit(0);
-                    
-                }
-
-                    args = (char**) malloc(sizeof(char*));
-
-                    args[arg_count++] = strtok(buffer, " ");
+                args[arg_count++] = strtok(buffer, " ");
 
                 while(args[arg_count-1]!=NULL){
                     args = (char**) realloc(args, (arg_count + 1) * sizeof(char*));
@@ -87,10 +73,7 @@ int main(){
                 read(resposta1,&tempo_exec,sizeof(unsigned long long));
                 close(resposta1);
 
-                if(current!=NULL){                
-                    current->finished = 1;
-                }
-
+                alterar_finished(&inicio, meuPid);
 
                 if(fork()==0){
                         char nome[25];
@@ -107,7 +90,7 @@ int main(){
                             exit(1);
                         }
                         char processo[512];
-                        sprintf(processo,"%s;%s;%llu\n",Ncliente,buffer,tempo_exec);
+                        sprintf(processo,"%s;%s;%llu\n",Ncliente,bufferAux,tempo_exec);
                         write(file,processo,strlen(processo));
                         close(file); 
                         exit(0);
@@ -115,28 +98,16 @@ int main(){
             }
             else if(flag == 's'){
                 close(fdFilho);
-                Proc* current = NULL;
-                current = inicio;
-
-                    while (current != NULL && current->pid!= meuPid) {
-                        current = current->next;
-                    }
-
-                    if (current != NULL)
-                    {
-                        current->finished = 1; 
-                    }
-                    else {printf("Pid inexistente: %d", meuPid);
-                        }
+                alterar_finished(&inicio, meuPid);
                 int resposta = open(Ncliente, O_WRONLY);
                 imprimir_lista(inicio,resposta);
                 close(resposta);
             }
 
-
+        
             exit(0);
         }
-       remove_finished_procs(&inicio);
+        
     }
     free_lista(inicio);
     close(fd);    

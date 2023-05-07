@@ -35,6 +35,7 @@ int main(int argc, char * argv[]){
         char pedido[len + 4];
         sprintf(pedido,"u%03d%s",len+1,argv[3]);
         write(fdCliente,pedido,strlen(pedido)+1);
+        write(fdCliente,&timestamp_inicio, sizeof(timestamp_inicio));
         close(fdCliente);
         int resposta = open(nCliente,O_RDONLY);
 

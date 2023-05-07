@@ -13,15 +13,15 @@ Proc* inicializar_lista() {
     return NULL;
 }
 
-void adicionar_processo(Proc** inicio, int pid, char* prog, unsigned long long timestamp) {
-    Proc* novo_processo = malloc(sizeof(Proc));
+void adiciona_processo(Proc **inicio, int pid) {
+    Proc *novo_processo = malloc(sizeof(Proc));
     novo_processo->pid = pid;
-    strcpy(novo_processo->prog, prog);
-    novo_processo->timestamp = timestamp;
+    novo_processo->prog = NULL;
+    novo_processo->timestamp = 0;
     novo_processo->finished = 0;
-    novo_processo->next = NULL;
     novo_processo->tempo_exec = 0;
-    
+    novo_processo->next = NULL;
+
     if (*inicio == NULL) {
         *inicio = novo_processo;
     } else {
@@ -90,26 +90,23 @@ void imprimir_lista(Proc *head, int descritor) {
     Proc *atual = head;
     char buffer[400];
     while (atual != NULL) {
-        if(atual->finished==0){
-        unsigned long long tempo_exec = now - atual->timestamp;
-        char prog[200];
-        strcpy(prog,atual->prog);
-        sprintf(buffer, "%d;%s;%llu\n", atual->pid,prog, tempo_exec);
-        write(descritor, buffer, strlen(buffer));
-        atual = atual->next;
+        if (atual->finished == 0) {
+            unsigned long long tempo_exec = now - atual->timestamp;
+            printf("%s",atual->prog);
+            sprintf(buffer, "%d;%s;%llu\n", atual->pid, atual->prog, tempo_exec);
+            write(descritor, buffer, strlen(buffer));
         }
-        else{
         atual = atual->next;
-        }
     }
 }
 
-void free_lista(Proc *head) {
-    Proc *atual = head;
+void free_lista(Proc* inicio) {
+    Proc* atual = inicio;
     while (atual != NULL) {
-        Proc *temp = atual;
-        atual = atual->next;
-        free(temp);
+        Proc* proximo = atual->next;
+        free(atual->prog); 
+        free(atual);      
+        atual = proximo;
     }
 }
 
@@ -146,6 +143,38 @@ void execute_u(char* fifo , char** args){
 
     free(args);
     close(resposta);
+}
+
+void alterar_nodo(Proc **inicio, int pid, char *prog, unsigned long long timestamp) {
+    Proc* current = *inicio;
+    while (current != NULL && current->pid != pid) {
+        current = current->next;
+    }
+    if (current != NULL) {
+        current->timestamp = timestamp;
+        current->finished = 0;
+        current->prog = malloc(strlen(prog) + 1); 
+        strcpy(current->prog, prog);
+    } else {
+        printf("Pid inexistente: %d", pid);
+    }
+}
+
+void alterar_finished(Proc **inicio, int pid) {
+    Proc* current = *inicio;
+    while (current != NULL && current->pid != pid) {
+        current = current->next;
+    }
+    if (current != NULL) {
+        if(current->finished==1){
+            current->finished=0;
+        }
+        else{
+            current->finished = 1;
+        }
+    } else {
+        printf("Pid inexistente: %d", pid);
+    }
 }
 
 
