@@ -20,7 +20,9 @@ int main(int argc, char * argv[]){
     printf("Cliente: %s\n", nCliente);
     mkfifo(nCliente, 0666);
 
-    if(strcmp(argv[1],"execute") == 0 && strcmp(argv[2],"-u") == 0){
+    if(strcmp(argv[1],"execute") == 0){
+        char type[2];
+        strcpy(type, argv[2]);
         int fdCliente = open(nCliente, O_WRONLY);
         if ((argc - 3) <= 0) {
             printf("Erro: nenhum argumento fornecido\n");
@@ -29,24 +31,20 @@ int main(int argc, char * argv[]){
         int len = strlen(argv[3]);
         printf("Programa: %s\n\n---------------------------------------\n\n", argv[3]);
 
-        unsigned long long timestamp_inicio= calcula_timestamp();
-
-        
         char pedido[len + 4];
-        sprintf(pedido,"u%03d%s",len+1,argv[3]);
+        sprintf(pedido,"e%03d%s",len+1,argv[3]);
         write(fdCliente,pedido,strlen(pedido)+1);
+        unsigned long long timestamp_inicio= calcula_timestamp();
         write(fdCliente,&timestamp_inicio, sizeof(timestamp_inicio));
         close(fdCliente);
-        int resposta = open(nCliente,O_RDONLY);
-
-        char bufferResposta[512];
-        int bytes;
-
-        while((bytes = read(resposta,bufferResposta,sizeof(bufferResposta))) > 0){
-            write(STDOUT_FILENO,bufferResposta,bytes);
-
+        
+        if(strcmp("-u",type)==0){
+            execute_u(argv[3]);
         }
-        close(resposta);
+        else if(strcmp("-p",type)==0){
+            execute_pipeline(argv[3]);
+        }
+
 
         unsigned long long timestamp_fim= calcula_timestamp();
 

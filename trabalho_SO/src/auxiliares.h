@@ -21,8 +21,10 @@ void imprimir_lista(Proc *head, int descritor);
 
 void free_lista(Proc *head);
 
-void execute_u(char* fifo , char** args);
+void execute_u(char* prog);
 
 void alterar_nodo(Proc **inicio, int pid, char *prog, unsigned long long timestamp);
 
 void alterar_finished(Proc **inicio, int pid);
+
+void execute_pipeline(char* pipeline);
