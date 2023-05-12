@@ -13,11 +13,11 @@ Proc* inicializar_lista() {
     return NULL;
 }
 
-void adiciona_processo(Proc **inicio, int pid) {
+void adiciona_processo(Proc **inicio, int pid, char* prog, unsigned long long timestamp) {
     Proc *novo_processo = malloc(sizeof(Proc));
     novo_processo->pid = pid;
-    novo_processo->prog = NULL;
-    novo_processo->timestamp = 0;
+    strcpy(novo_processo->prog,prog);
+    novo_processo->timestamp = timestamp;
     novo_processo->finished = 0;
     novo_processo->tempo_exec = 0;
     novo_processo->next = NULL;
@@ -92,12 +92,66 @@ void imprimir_lista(Proc *head, int descritor) {
     while (atual != NULL) {
         if (atual->finished == 0) {
             unsigned long long tempo_exec = now - atual->timestamp;
-            printf("%s",atual->prog);
             sprintf(buffer, "%d;%s;%llu\n", atual->pid, atual->prog, tempo_exec);
             write(descritor, buffer, strlen(buffer));
         }
         atual = atual->next;
     }
+}
+void imprimir_lista_time(Proc *head, int descritor, char* pids) {
+    Proc *atual = head;
+    unsigned long long tempo = 0;
+    char buffer[400];
+    char* token = strtok(pids, " ");
+    
+    while (token != NULL) {
+        int pid = atoi(token);
+        
+        while (atual != NULL) {
+            if (atual->pid == pid && atual->finished == 1) {
+                tempo += atual->tempo_exec;
+                break;
+            }
+            atual = atual->next;
+        }
+        
+        token = strtok(NULL, " ");
+    }
+    
+    sprintf(buffer, "Tempo total de execução dos PIDs: %llu segundos\n", tempo);
+    write(descritor, buffer, strlen(buffer));
+}
+void imprimir_lista_uniq(Proc *head, int descritor, char* pids) {
+    Proc *atual = head;
+    unsigned long long tempo = 0;
+    char* token = strtok(pids, " ");
+    
+    while (token != NULL) {
+        int pid = atoi(token);
+        
+        while (atual != NULL) {
+            if (atual->pid == pid) {
+                int tamanho = strlen(atual->prog);
+                char aux[tamanho];
+                
+                strcpy(aux,atual->prog);
+
+                char* tokenAux;
+                tokenAux = strtok(aux, "|");
+                while (tokenAux != NULL) {
+                    char buffer[50];
+                    sprintf(buffer, "%s\n", tokenAux);
+                    write(descritor, buffer, strlen(buffer));
+                    tokenAux = strtok(NULL, "|");
+                }
+            }
+            atual = atual->next;
+        }
+        
+        token = strtok(NULL, " ");
+    }
+    
+    
 }
 
 void free_lista(Proc* inicio) {
@@ -146,22 +200,9 @@ void execute_u(char* prog){
     free(args);
 }
 
-void alterar_nodo(Proc **inicio, int pid, char *prog, unsigned long long timestamp) {
-    Proc* current = *inicio;
-    while (current != NULL && current->pid != pid) {
-        current = current->next;
-    }
-    if (current != NULL) {
-        current->timestamp = timestamp;
-        current->finished = 0;
-        current->prog = malloc(strlen(prog) + 1); 
-        strcpy(current->prog, prog);
-    } else {
-        printf("Pid inexistente: %d", pid);
-    }
-}
 
-void alterar_finished(Proc **inicio, int pid) {
+
+void alterar_finished(Proc **inicio, int pid, unsigned long long temp_exec) {
     Proc* current = *inicio;
     while (current != NULL && current->pid != pid) {
         current = current->next;
@@ -172,6 +213,7 @@ void alterar_finished(Proc **inicio, int pid) {
         }
         else{
             current->finished = 1;
+            current->tempo_exec = temp_exec;
         }
     } else {
         printf("Pid inexistente: %d", pid);
@@ -179,59 +221,106 @@ void alterar_finished(Proc **inicio, int pid) {
 }
 
 void execute_pipeline(char* pipeline) {
-    char* token;
-    char* commands[100][100][100];
+    char comandos[10][100];
+    char* commands[10][100];
     int command_count = 0;
-    int arg_count = 0;
-    int input_fd = STDIN_FILENO;
-    int fd[2];
 
-    token = strtok(pipeline, "|");
+    char *token = strtok(pipeline, "|");
     while (token != NULL) {
-        arg_count = 0;
-        token = strtok(token, " ");
-        while (token != NULL) {
-            strcpy(commands[command_count][arg_count],token);
-            arg_count++;
-            token = strtok(NULL, " ");
-        }
-        strcpy(commands[command_count][arg_count],NULL);
-        command_count++;
+        strcpy(comandos[command_count], token);
         token = strtok(NULL, "|");
+        command_count++;
     }
+
+    for (int i = 0; i < command_count; i++) {
+        char temp[100];
+        strcpy(temp, comandos[i]);
+
+        char* token = strtok(temp, " ");
+        int j = 0;
+
+        while (token != NULL) {
+            commands[i][j] = strdup(token);
+            token = strtok(NULL, " ");
+            j++;
+        }
+        commands[i][j] = NULL;
+    }
+
+    int pipo[command_count-1][2];
+    pid_t child_pids[command_count];
 
     for (int i = 0; i < command_count; i++) {
         if (i < command_count - 1) {
-            pipe(fd);
+            pipe(pipo[i]);
         }
 
-        pid_t pid = fork();
+        child_pids[i] = fork();
+        if (child_pids[i] == 0) {
+            if (i == 0) {
+                dup2(pipo[0][1], 1);
+                close(pipo[0][0]);
+                close(pipo[0][1]);
+            } else if (i < command_count - 1) {
+                dup2(pipo[i - 1][0], 0);
+                close(pipo[i - 1][0]);
 
-        if (pid < 0) {
-            perror("Erro ao criar processo filho");
-            exit(EXIT_FAILURE);
-        } else if (pid == 0) {
-            if (input_fd != STDIN_FILENO) {
-                dup2(input_fd, STDIN_FILENO);
-                close(input_fd);
-            }
-
-            if (i < command_count - 1) {
-                dup2(fd[1], STDOUT_FILENO);
-                close(fd[0]);
-                close(fd[1]);
+                dup2(pipo[i][1], 1);
+                close(pipo[i][0]);
+                close(pipo[i][1]);
+            } else {
+                dup2(pipo[i - 1][0], 0);
+                close(pipo[i - 1][1]);
+                close(pipo[i - 1][0]);
             }
 
             execvp(commands[i][0], commands[i]);
-            perror("Erro ao executar o comando");
-            exit(EXIT_FAILURE);
-        } else {
-            close(fd[1]);
-            input_fd = fd[0];
+
+            perror("exec falhou");
+            exit(1);
         }
     }
 
+    for (int i = 0; i < command_count - 1; i++) {
+        close(pipo[i][0]);
+        close(pipo[i][1]);
+    }
+
     for (int i = 0; i < command_count; i++) {
-        wait(NULL);
+        waitpid(child_pids[i], NULL, 0);
+    }
+
+    for (int i = 0; i < command_count; i++) {
+        for (int j = 0; commands[i][j] != NULL; j++) {
+            free(commands[i][j]);
+        }
+    }
+}
+
+
+int existe_pid(Proc **inicio, int pid) {
+    Proc* current = *inicio;
+    while (current != NULL) {
+        if (current->pid == pid) {
+            return 1; // O pid existe na lista
+        }
+        current = current->next;
+    }
+    return 0;
+}
+char* devolve_prog(Proc **inicio, int pid) {
+    Proc* current = *inicio;
+    char aux[100];
+    while (current != NULL && current->pid != pid) {
+        current = current->next;
+    }
+    if (current != NULL) {
+        strcpy(aux, current->prog);
+        char* result = malloc(strlen(aux) + 1);
+        strcpy(result, aux);
+        return result;
+    } else {
+        printf("Pid inexistente: %d\n", pid);
+        return NULL;
     }
 }
