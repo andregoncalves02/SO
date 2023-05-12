@@ -44,7 +44,6 @@ int main() {
 
                 unsigned long long timestamp;
                 read(fdFilho, &timestamp, sizeof(unsigned long long));
-                printf("%llu\n",timestamp);
 
                 close(fdFilho);
             
@@ -60,14 +59,15 @@ int main() {
                 }
             }
             else if (flag == 't' || flag == 'u') {
+                printf("%c",flag);
                 char tamanho[3];
                 read(fdFilho,tamanho,3);
-                printf("%s\n",tamanho);
+                
                 int len = atoi(tamanho);
                 char pids[len+1];
                 read(fdFilho,pids,len+1);
                 close(fdFilho);
-                printf("%s\n",pids);
+                
             
                 if (fork() == 0) {
                     int resposta = open(Ncliente, O_WRONLY);

@@ -80,9 +80,8 @@ int main(int argc, char * argv[]){
         close(resposta);
 
     }
-    else if(strcmp(argv[1],"stats-time")){
+    else if(strcmp(argv[1],"stats-time")==0){
         int fdCliente = open(nCliente, O_WRONLY);
-        int pid_count = argc - 2;
         char pid_string[400];
 
         for (int i = 2; i < argc; i++) {
@@ -90,11 +89,9 @@ int main(int argc, char * argv[]){
             strcat(pid_string, " ");
         }
 
-
         int tamanho = strlen(pid_string);
         char pedido[tamanho+5];
         sprintf(pedido,"t%03d%s",tamanho,pid_string);
-        printf("%s\n",pedido);
         write(fdCliente,pedido,strlen(pedido)+1);
         close(fdCliente);
 
@@ -111,9 +108,8 @@ int main(int argc, char * argv[]){
 
 
     }
-    else if(strcmp(argv[1],"stats-uniq")){
+    else if(strcmp(argv[1],"stats-uniq")==0){
         int fdCliente = open(nCliente, O_WRONLY);
-        int pid_count = argc - 2;
         char pid_string[400];
 
         for (int i = 2; i < argc; i++) {
@@ -125,7 +121,6 @@ int main(int argc, char * argv[]){
         int tamanho = strlen(pid_string);
         char pedido[tamanho+5];
         sprintf(pedido,"u%03d%s",tamanho,pid_string);
-        printf("%s\n",pedido);
         write(fdCliente,pedido,strlen(pedido)+1);
         close(fdCliente);
 

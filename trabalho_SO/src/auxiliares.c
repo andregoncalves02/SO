@@ -99,16 +99,15 @@ void imprimir_lista(Proc *head, int descritor) {
     }
 }
 void imprimir_lista_time(Proc *head, int descritor, char* pids) {
-    Proc *atual = head;
     unsigned long long tempo = 0;
     char buffer[400];
     char* token = strtok(pids, " ");
     
     while (token != NULL) {
         int pid = atoi(token);
-        
+        Proc *atual = head;
         while (atual != NULL) {
-            if (atual->pid == pid && atual->finished == 1) {
+            if (atual->pid == pid) {
                 tempo += atual->tempo_exec;
                 break;
             }
@@ -118,32 +117,21 @@ void imprimir_lista_time(Proc *head, int descritor, char* pids) {
         token = strtok(NULL, " ");
     }
     
-    sprintf(buffer, "Tempo total de execução dos PIDs: %llu segundos\n", tempo);
+    sprintf(buffer, "Tempo total de execução dos PIDs: %llu ms\n", tempo);
     write(descritor, buffer, strlen(buffer));
 }
 void imprimir_lista_uniq(Proc *head, int descritor, char* pids) {
-    Proc *atual = head;
-    unsigned long long tempo = 0;
     char* token = strtok(pids, " ");
-    
+    char bufferResposta[512];
+    bufferResposta[0] = '\0';
     while (token != NULL) {
         int pid = atoi(token);
-        
+        Proc *atual = head;
         while (atual != NULL) {
             if (atual->pid == pid) {
-                int tamanho = strlen(atual->prog);
-                char aux[tamanho];
-                
-                strcpy(aux,atual->prog);
-
-                char* tokenAux;
-                tokenAux = strtok(aux, "|");
-                while (tokenAux != NULL) {
-                    char buffer[50];
-                    sprintf(buffer, "%s\n", tokenAux);
-                    write(descritor, buffer, strlen(buffer));
-                    tokenAux = strtok(NULL, "|");
-                }
+                char buffer[200];
+                    sprintf(buffer, "%s\n", atual->prog);
+                    strcat(bufferResposta,buffer);
             }
             atual = atual->next;
         }
@@ -151,6 +139,7 @@ void imprimir_lista_uniq(Proc *head, int descritor, char* pids) {
         token = strtok(NULL, " ");
     }
     
+    write(descritor, bufferResposta, strlen(bufferResposta));
     
 }
 
