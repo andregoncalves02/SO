@@ -120,8 +120,8 @@ int main(int argc, char * argv[]) {
                     char nome[40];
                     sprintf(nome, "%s/%s.txt", pasta,Ncliente);
                     
-                    if (access("data", F_OK) != 0) {
-                        if (mkdir("data", S_IRWXU) != 0) {
+                    if (access(pasta, F_OK) != 0) {
+                        if (mkdir(pasta, S_IRWXU) != 0) {
                             perror("Erro ao criar diretório");
                             exit(1);
                         }
