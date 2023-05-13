@@ -23,6 +23,8 @@ void imprimir_lista_time(Proc *head, int descritor, char* pids);
 
 void imprimir_lista_uniq(Proc *head, int descritor, char* pids);
 
+void imprimir_lista_commands(Proc *head, int descritor, char* pids, char* prog);
+
 void free_lista(Proc *head);
 
 void execute_u(char* prog);

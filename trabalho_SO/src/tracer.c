@@ -137,6 +137,36 @@ int main(int argc, char * argv[]){
 
 
     }
+    else if(strcmp(argv[1],"stats-command")==0){
+        int fdCliente = open(nCliente, O_WRONLY);
+        char pid_string[400];
+
+        for (int i = 3; i < argc; i++) {
+            strcat(pid_string, argv[i]);
+            strcat(pid_string, " ");
+        }
+
+
+        int tamanho = strlen(pid_string);
+        int tamanhoP = strlen(argv[2]);
+        char pedido[tamanhoP+tamanho+8];
+        sprintf(pedido,"c%02d%s%03d%s",tamanhoP,argv[2],tamanho,pid_string);
+        write(fdCliente,pedido,strlen(pedido)+1);
+        close(fdCliente);
+        sleep(1);
+        int resposta = open(nCliente, O_RDONLY);
+
+        char bufferResposta[512];
+        int bytes;
+        while((bytes = read(resposta,bufferResposta,sizeof(bufferResposta))) > 0){
+            write(STDOUT_FILENO,bufferResposta,bytes);
+        }
+
+        close(resposta);
+
+
+
+    }
     else puts("Indique uma opção valida");
         
 return 0;

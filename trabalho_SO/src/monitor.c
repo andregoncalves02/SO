@@ -8,9 +8,11 @@
 #include <fcntl.h>
 #include "auxiliares.h"
 
-int main() {
+int main(int argc, char * argv[]) {
     int fd;
     Proc *inicio = NULL;
+    char pasta[20];
+    strcpy(pasta,argv[1]);
     mkfifo("recebe_clientes", 0666);
     
     while (1) {
@@ -59,7 +61,6 @@ int main() {
                 }
             }
             else if (flag == 't' || flag == 'u') {
-                printf("%c",flag);
                 char tamanho[3];
                 read(fdFilho,tamanho,3);
                 
@@ -81,6 +82,32 @@ int main() {
                     exit(0);
                 }
             }
+            else if (flag == 'c') {
+                char tamanhoP[2];
+                read(fdFilho,tamanhoP,2);
+                
+                
+                int lenP = atoi(tamanhoP);
+                char prog[lenP+1];
+                read(fdFilho,prog,lenP);
+                
+
+                char tamanho[3];
+                read(fdFilho,tamanho,3);
+                
+                
+                int len = atoi(tamanho);
+                char pids[len+1];
+                read(fdFilho,pids,len+1);
+                close(fdFilho);
+            
+                if (fork() == 0) {
+                    int resposta = open(Ncliente, O_WRONLY);
+                    imprimir_lista_commands(inicio, resposta, pids, prog);
+                    close(resposta);
+                    exit(0);
+                }
+            }
         }
             else {
                 int resposta1 = open(Ncliente, O_RDONLY);
@@ -90,8 +117,8 @@ int main() {
                 alterar_finished(&inicio, pidInt, tempo_exec);
 
                 if (fork() == 0) {
-                    char nome[25];
-                    sprintf(nome, "data/%s.txt", Ncliente);
+                    char nome[40];
+                    sprintf(nome, "%s/%s.txt", pasta,Ncliente);
                     
                     if (access("data", F_OK) != 0) {
                         if (mkdir("data", S_IRWXU) != 0) {

@@ -120,6 +120,31 @@ void imprimir_lista_time(Proc *head, int descritor, char* pids) {
     sprintf(buffer, "Tempo total de execução dos PIDs: %llu ms\n", tempo);
     write(descritor, buffer, strlen(buffer));
 }
+void imprimir_lista_commands(Proc *head, int descritor, char* pids, char* prog) {
+    int count = 0;
+    char buffer[400];
+    char* token = strtok(pids, " ");
+    
+    while (token != NULL) {
+        int pid = atoi(token);
+        Proc *atual = head;
+        while (atual != NULL) {
+            if (atual->pid == pid) {
+                if(strcmp(atual->prog,prog)==0){
+                    count++;
+                }
+                break;
+            }
+            atual = atual->next;
+        }
+        
+        token = strtok(NULL, " ");
+    }
+    
+    sprintf(buffer, "O programa foi executado um total de %d vezes\n", count);
+    write(descritor, buffer, strlen(buffer));
+}
+
 void imprimir_lista_uniq(Proc *head, int descritor, char* pids) {
     char* token = strtok(pids, " ");
     char bufferResposta[512];
