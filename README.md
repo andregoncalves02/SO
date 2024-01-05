@@ -1,4 +1,4 @@
-# Introdução
+# Introduction
 This was a practical work proposed by the professors of the Operating Systems course. We were tasked with implementing two programs: a client (Tracer) and a server (Monitor), establishing communication between them. The server should be capable of handling client requests and, in turn, storing the necessary information for this purpose.
 
 To accomplish this task, it was necessary to utilize the C programming language. Only functions from the C library for file writing, reading, and opening were permitted for use.
